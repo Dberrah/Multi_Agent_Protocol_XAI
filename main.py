@@ -105,6 +105,7 @@ while(not done):
 		game_score = getScore(targetIndex, universeGraph, gameArgs, firstValuation) # get the game score
 		minDiff = abs(ag_score[i] - game_score) # calculate the difference between their own score and the game score
 		min_index = -1 # for now no arg is played
+		multipleArgs = False
 		j = 0
 		for arg in agentsArgs[i]: # for each arg of the agent
 			if(arg not in gameArgs): # if the arg has not been played
@@ -113,13 +114,31 @@ while(not done):
 					min_index = j # holds the arg that brings the score closest to own score
 					minDiff = abs(ag_score[i] - new_score) # update the score difference
 					done = False # an arg is played so the game is not done
+					multipleArgs = False
+				else:
+					for item in range(universeGraph[j].__len__()):
+						if(universeGraph[j][item] == 1):
+							if(item in agentsArgs[i]):
+								new_score = getScore(targetIndex, universeGraph, gameArgs+[arg]+[item], firstValuation) # score if arg is added
+								if(abs(ag_score[i] - new_score) < minDiff): # if it brings the game score closer to own score
+									min_index = j # holds the arg that brings the score closest to own score
+									minDiff = abs(ag_score[i] - new_score) # update the score difference
+									done = False # an arg is played so the game is not done
+									multipleArgs = [item]
 			j += 1 # update index for next loop
 		if(min_index == -1):
 			print(f'Agent {i} doesn\'t play this round')
-		else:
+		elif(multipleArgs == False):
 			print(f'Agent {i} plays argument {agentsArgs[i][min_index]}')
 			argsImpact[agentsArgs[i][min_index]] = game_score - ag_score[i] + minDiff
 			gameArgs.append(int(agentsArgs[i][min_index]))
+		else:
+			print(f'Multiple args : {multipleArgs}')
+			print(f'Agent {i} plays argument {agentsArgs[i][min_index]} and {multipleArgs[0]}')
+			argsImpact[agentsArgs[i][min_index]] = game_score - ag_score[i] + minDiff
+			gameArgs.append(int(agentsArgs[i][min_index]))
+			argsImpact[multipleArgs[0]] = game_score - ag_score[i] + minDiff
+			gameArgs.append(int(multipleArgs[0]))
 		print(f'gameArgs, score : {gameArgs}, {getScore(targetIndex, universeGraph, gameArgs, firstValuation)}')
 
 print(f'gameArgs = {gameArgs}')
