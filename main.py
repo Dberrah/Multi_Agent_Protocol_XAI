@@ -1,5 +1,6 @@
 import re
 import sys
+import os.path
 
 def getScore(targetIndex, graph, args, firstValuation):
 	newValuation = []
@@ -26,52 +27,69 @@ gameArgs = []
 universeArgs = []
 agentsArgs = []
 argsImpact = []
+save = False
+fileToSave = 'save.txt'
+fileExists = False
+game = []
 
-with open(sys.argv[1]) as file_object:
-	# reads nb of agents
-	line = file_object.readline()
-	values = re.split(' ', line)
-	nbAgents = int(values[0])
-
-	# reads graph size
-	line = file_object.readline()
-	values = re.split(' ', line)
-	graphSize = int(values[0])
-
-	# reads target index
-	line = file_object.readline()
-	values = re.split(' ', line)
-	targetIndex = int(values[0])
-	gameArgs.append(int(values[0]))
-
-	# skips blank line
-	line = file_object.readline()
-	line = file_object.readline()
-
-	# reads universe graph
-	for i in range(graphSize):
-		values = re.split(' ', line)
-		argRelations = []
-		for item in values:
-			argRelations.append(int(item))
-		universeGraph.append(argRelations)
-		line = file_object.readline()
-
-	# skips blank line
-	line = file_object.readline()
-	values = re.split(' ', line)
-	if(int(values[0]) == 1): # if there is agents graphs
-		# skips blank line
-		line = file_object.readline()
-		line = file_object.readline()
-		# reads agents graphs
-		for i in range(nbAgents):
-			values = re.split(' ', line)
-			argslist = []
-			for item in values:
-				argslist.append(int(item))
-			agentsArgs.append(argslist)
+argvIndex = 0
+# print(sys.argv[])
+for item in sys.argv:
+	if(sys.argv[argvIndex] == '-f' and sys.argv.__len__() > (argvIndex+1)):
+		fileExists = os.path.exists(sys.argv[(argvIndex+1)])
+		if(fileExists == False):
+			raise Exception("File not Found")
+		with open(sys.argv[(argvIndex+1)]) as file_object:
+			# reads nb of agents
 			line = file_object.readline()
+			values = re.split(' ', line)
+			nbAgents = int(values[0])
+
+			# reads graph size
+			line = file_object.readline()
+			values = re.split(' ', line)
+			graphSize = int(values[0])
+
+			# reads target index
+			line = file_object.readline()
+			values = re.split(' ', line)
+			targetIndex = int(values[0])
+			gameArgs.append(int(values[0]))
+
+			# skips blank line
+			line = file_object.readline()
+			line = file_object.readline()
+
+			# reads universe graph
+			for i in range(graphSize):
+				values = re.split(' ', line)
+				argRelations = []
+				for item in values:
+					argRelations.append(int(item))
+				universeGraph.append(argRelations)
+				line = file_object.readline()
+
+			# skips blank line
+			line = file_object.readline()
+			values = re.split(' ', line)
+			if(int(values[0]) == 1): # if there is agents graphs
+				# skips blank line
+				line = file_object.readline()
+				line = file_object.readline()
+				# reads agents graphs
+				for i in range(nbAgents):
+					values = re.split(' ', line)
+					argslist = []
+					for item in values:
+						argslist.append(int(item))
+					agentsArgs.append(argslist)
+					line = file_object.readline()
+	elif(sys.argv[argvIndex] == '-s' and sys.argv.__len__() > (argvIndex+1)):
+		save = True
+		saveToFile = sys.argv[(argvIndex+1)]
+	argvIndex += 1
+
+
 
 for item in range(graphSize):
 	universeArgs.append(item)
@@ -130,11 +148,13 @@ while(not done):
 			print(f'Agent {i} doesn\'t play this round')
 		elif(multipleArgs == False):
 			print(f'Agent {i} plays argument {agentsArgs[i][min_index]}')
+			game += [[int(i), int(agentsArgs[i][min_index])]]
 			argsImpact[agentsArgs[i][min_index]] = game_score - ag_score[i] + minDiff
 			gameArgs.append(int(agentsArgs[i][min_index]))
 		else:
 			print(f'Multiple args : {multipleArgs}')
 			print(f'Agent {i} plays argument {agentsArgs[i][min_index]} and {multipleArgs[0]}')
+			game += [[int(i), int(agentsArgs[i][min_index]), int(multipleArgs[0])]]
 			argsImpact[agentsArgs[i][min_index]] = game_score - ag_score[i] + minDiff
 			gameArgs.append(int(agentsArgs[i][min_index]))
 			argsImpact[multipleArgs[0]] = game_score - ag_score[i] + minDiff
@@ -143,3 +163,28 @@ while(not done):
 
 print(f'gameArgs = {gameArgs}')
 print(f'argsImpact = {argsImpact}')
+
+if(save != True):
+	choice = '2'
+	while(choice != '0' and choice != '1'):
+		choice = input(f'Do you want to save the game and metrics ?\n\t0 : No\n\t1 : Yes\n')
+		if(choice != '0' and choice != '1'):
+			print(f'Incorrect input...\n')
+	if(int(choice) == 1):
+		save = True
+		saveToFile = input(f'Enter path to save file : \n')
+
+if(save == True):
+	with open(saveToFile, 'w') as f:
+		for item in game:
+			if(item.__len__() == 2):
+				f.write(f'Agent {item[0]} plays {item[1]}\n')
+			elif(item.__len__() == 3):
+				f.write(f'Agent {item[0]} plays {item[1]} and {item[2]}\n')
+		f.write(f'universeGraph :')
+		for item in universeGraph:
+			f.write(f'\n\t\t{item}')
+		f.write(f'\ngameArgs :')
+		for item in gameArgs:
+			f.write(f' {item}')
+		f.write(f'\ngame score : {getScore(targetIndex, universeGraph, gameArgs, firstValuation)}')
