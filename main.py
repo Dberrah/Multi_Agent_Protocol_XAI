@@ -311,16 +311,17 @@ for item in universeArgs:
 
 # impact of agents based on final outcome
 
-# print("\nimpact of args based on final outcome\n")
-# print(f'game = {game}')
-# print(f'argsPlayedByAgent = {argsPlayedByAgent}')
-item = 0
-for i in agentsArgs:
-	a = getComplementScore(targetIndex, universeGraph, gameArgs, firstValuation, getAgentAttackers(item, universeGraph, universeArgs))
-	b = getComplementScore(targetIndex, universeGraph, gameArgs, firstValuation, i)
-	# print(f'agent {item} is attacked by {getAgentAttackers(item, universeGraph, universeArgs)} with an impact of {a}-{b}')
-	agentsImpactOnFinalOutcome[item] = a - b
-	item += 1
+# item = 0
+# for i in agentsArgs:
+# 	a = getComplementScore(targetIndex, universeGraph, gameArgs, firstValuation, getAgentAttackers(item, universeGraph, universeArgs))
+# 	b = getComplementScore(targetIndex, universeGraph, gameArgs, firstValuation, i)
+# 	# print(f'agent {item} is attacked by {getAgentAttackers(item, universeGraph, universeArgs)} with an impact of {a}-{b}')
+# 	agentsImpactOnFinalOutcome[item] = a - b
+# 	item += 1
+
+# score inferrance
+
+
 
 # print metrics
 
@@ -330,9 +331,9 @@ print(f'argsImpact = {argsImpact}')
 print(f'argsImpactOnFinalOutcome = {argsImpactOnFinalOutcome}')
 print(f'argsImpactOnPartialProtocol = {argsImpactOnPartialProtocol}')
 print(f'argsImpactOnUniverseProtocol = {argsImpactOnUniverseProtocol}')
-print(f'agentsImpactOnFinalOutcome = {agentsImpactOnFinalOutcome}')
-print(f'agentsImpactOnPartialProtocol = {agentsImpactOnPartialProtocol}')
-print(f'agentsImpactOnUniverseProtocol = {agentsImpactOnUniverseProtocol}')
+# print(f'agentsImpactOnFinalOutcome = {agentsImpactOnFinalOutcome}')
+# print(f'agentsImpactOnPartialProtocol = {agentsImpactOnPartialProtocol}')
+# print(f'agentsImpactOnUniverseProtocol = {agentsImpactOnUniverseProtocol}')
 
 # to save the game
 
