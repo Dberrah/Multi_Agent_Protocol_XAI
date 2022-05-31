@@ -56,6 +56,31 @@ def getComplementScore(targetIndex, graph, args, firstValuation, ignoredArgs):
 	else:
 		return getComplementScore(targetIndex, graph, args, newValuation, ignoredArgs)
 
+def turnScoreInference(move, previousTurnScore, argsPlayed, agentsInference):
+	if(move.__len__() == 1):
+		return move[0], int(0), argsPlayed, previousTurnScore, agentsInference
+	elif(move.__len__() == 2):
+		newScore = getScore(targetIndex, universeGraph, argsPlayed+[move[1]], firstValuation)
+		if(newScore < previousTurnScore):
+			if(((previousTurnScore + newScore)/2.0) < agentsInference[move[0]][1]):
+				agentsInference[move[0]][1] = ((previousTurnScore + newScore)/2.0)
+		else:
+			if(((previousTurnScore + newScore)/2.0) > agentsInference[move[0]][1]):
+				agentsInference[move[0]][1] = ((previousTurnScore + newScore)/2.0)
+		return move[0], int(1), argsPlayed+[move[1]], newScore, agentsInference
+	elif(move.__len__() == 3):
+		newScore = getScore(targetIndex, universeGraph, argsPlayed+[move[1]]+[move[2]], firstValuation)
+		if(newScore < previousTurnScore):
+			if(((previousTurnScore + newScore)/2.0) < agentsInference[move[0]][1]):
+				agentsInference[move[0]][1] = ((previousTurnScore + newScore)/2.0)
+		else:
+			if(((previousTurnScore + newScore)/2.0) > agentsInference[move[0]][1]):
+				agentsInference[move[0]][1] = ((previousTurnScore + newScore)/2.0)
+		return move[0], int(1), argsPlayed+[move[1]]+[move[2]], newScore, agentsInference
+
+def gameScoreInference(moves, nbAgent):
+	pass
+
 graphSize = 0
 nbAgents = 0
 targetIndex = 0
@@ -196,6 +221,7 @@ def protocol(game=[], gameArgs=[targetIndex]):
 				j += 1 # update index for next loop
 			if(min_index == -1):
 				print(f'Agent {i} doesn\'t play this round')
+				game += [[int(i)]]
 			elif(multipleArgs == False):
 				print(f'Agent {i} plays argument {agentsArgs[i][min_index]}')
 				game += [[int(i), int(agentsArgs[i][min_index])]]
