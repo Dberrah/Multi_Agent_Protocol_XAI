@@ -56,7 +56,7 @@ def getComplementScore(targetIndex, graph, args, firstValuation, ignoredArgs):
 	else:
 		return getComplementScore(targetIndex, graph, args, newValuation, ignoredArgs)
 
-def turnScoreInference(move, previousTurnScore, argsPlayed, agentsInference):
+def turnScoreInference(move, previousTurnScore, argsPlayed, agentsInference, targetIndex, firstValuation, universeGraph):
 	if(move.__len__() == 1):
 		return move[0], int(0), argsPlayed, previousTurnScore, agentsInference
 	elif(move.__len__() == 2):
@@ -65,8 +65,8 @@ def turnScoreInference(move, previousTurnScore, argsPlayed, agentsInference):
 			if(((previousTurnScore + newScore)/2.0) < agentsInference[move[0]][1]):
 				agentsInference[move[0]][1] = ((previousTurnScore + newScore)/2.0)
 		else:
-			if(((previousTurnScore + newScore)/2.0) > agentsInference[move[0]][1]):
-				agentsInference[move[0]][1] = ((previousTurnScore + newScore)/2.0)
+			if(((previousTurnScore + newScore)/2.0) > agentsInference[move[0]][0]):
+				agentsInference[move[0]][0] = ((previousTurnScore + newScore)/2.0)
 		return move[0], int(1), argsPlayed+[move[1]], newScore, agentsInference
 	elif(move.__len__() == 3):
 		newScore = getScore(targetIndex, universeGraph, argsPlayed+[move[1]]+[move[2]], firstValuation)
@@ -74,12 +74,29 @@ def turnScoreInference(move, previousTurnScore, argsPlayed, agentsInference):
 			if(((previousTurnScore + newScore)/2.0) < agentsInference[move[0]][1]):
 				agentsInference[move[0]][1] = ((previousTurnScore + newScore)/2.0)
 		else:
-			if(((previousTurnScore + newScore)/2.0) > agentsInference[move[0]][1]):
-				agentsInference[move[0]][1] = ((previousTurnScore + newScore)/2.0)
+			if(((previousTurnScore + newScore)/2.0) > agentsInference[move[0]][0]):
+				agentsInference[move[0]][0] = ((previousTurnScore + newScore)/2.0)
 		return move[0], int(1), argsPlayed+[move[1]]+[move[2]], newScore, agentsInference
 
-def gameScoreInference(moves, nbAgent):
+def legalMove(turnNotPlayed, move, universeGraph):
 	pass
+
+def gameScoreInference(moves, nbAgent, targetIndex):
+	score = 1
+	agentsInference = []
+	args = [targetIndex]
+	turnNotPlayed = []
+	for a in range(nbAgent):
+		agentsInference += [[0,1]]
+	print(f'moves : {moves}')
+	for move in moves:
+		ag, hasPlayed, args, score, agentsInference = turnScoreInference(move, score, args, agentsInference, targetIndex, firstValuation, universeGraph)
+		if(hasPlayed == 0):
+			print(f'{ag} did not play')
+			turnNotPlayed += [[ag,args,score]]
+		else:
+			print(f'{ag} did play : {agentsInference}')
+	return turnNotPlayed, agentsInference
 
 graphSize = 0
 nbAgents = 0
@@ -319,6 +336,10 @@ for item in universeArgs:
 		argsImpactOnPartialProtocol[item] = gameScore - newScore
 	else:
 		argsImpactOnPartialProtocol[item] = 0.0
+
+var1, var2 = gameScoreInference(game, nbAgents, targetIndex)
+
+print(f'turnNotPlayed : {var1}\nagentsInference : {var2}')
 
 # impact of args based on universe protocol
 
