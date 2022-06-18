@@ -3,6 +3,8 @@ import re
 import sys
 import os.path
 
+from sqlalchemy import false, true
+
 def getScore(targetIndex, graph, args, firstValuation):
 	newValuation = []
 	stable = True
@@ -78,8 +80,42 @@ def turnScoreInference(move, previousTurnScore, argsPlayed, agentsInference, tar
 				agentsInference[move[0]][0] = ((previousTurnScore + newScore)/2.0)
 		return move[0], int(1), argsPlayed+[move[1]]+[move[2]], newScore, agentsInference
 
-def legalMove(turnNotPlayed, move, universeGraph):
-	pass
+def negInference(turnNotPlayed, move, universeGraph, agentsInference):
+	couldHave = false
+	if(move.__len__() == 2):
+		i = 0
+		for att in universeGraph[move[1]]:
+			if(att == 1):
+				for turn in turnNotPlayed:
+					if(turn[0] == move[0]):
+						if(i in turn[1]): # agent could have played
+							couldHave = true
+							newScore = getScore(targetIndex, universeGraph, turn[1]+[move[1]], firstValuation)
+							print(f'previousScore : {turn[2]}, newScore : {newScore}')
+							if(newScore < turn[2]):
+								if(((turn[2] + newScore)/2.0) > agentsInference[move[0]][0]):
+									agentsInference[move[0]][0] = ((turn[2] + newScore)/2.0)
+							else:
+								if(((turn[2] + newScore)/2.0) < agentsInference[move[0]][1]):
+									agentsInference[move[0]][1] = ((turn[2] + newScore)/2.0)
+			i += 1
+	elif(move.__len__() == 3):
+		i = 0
+		for att in universeGraph[move[2]]:
+			if(att == 1):
+				for turn in turnNotPlayed:
+					if(turn[0] == move[0]):
+						if(i in turn[1]): # agent could have played
+							couldHave = true
+							newScore = getScore(targetIndex, universeGraph, turn[1]+[move[1]]+[move[2]], firstValuation)
+							if(newScore < turn[2]):
+								if(((turn[2] + newScore)/2.0) > agentsInference[move[0]][0]):
+									agentsInference[move[0]][0] = ((turn[2] + newScore)/2.0)
+							else:
+								if(((turn[2] + newScore)/2.0) < agentsInference[move[0]][1]):
+									agentsInference[move[0]][1] = ((turn[2] + newScore)/2.0)
+			i += 1
+	return agentsInference,couldHave
 
 def gameScoreInference(moves, nbAgent, targetIndex):
 	score = 1
@@ -90,12 +126,16 @@ def gameScoreInference(moves, nbAgent, targetIndex):
 		agentsInference += [[0,1]]
 	print(f'moves : {moves}')
 	for move in moves:
+		couldHave = false
 		ag, hasPlayed, args, score, agentsInference = turnScoreInference(move, score, args, agentsInference, targetIndex, firstValuation, universeGraph)
 		if(hasPlayed == 0):
-			print(f'{ag} did not play')
 			turnNotPlayed += [[ag,args,score]]
+			print(f'{ag} did not play : {turnNotPlayed}')
 		else:
 			print(f'{ag} did play : {agentsInference}')
+			agentsInference, couldHave = negInference(turnNotPlayed, move, universeGraph, agentsInference)
+			if(couldHave == true):
+				print(f'{ag} could have played : {agentsInference}')
 	return turnNotPlayed, agentsInference
 
 graphSize = 0
