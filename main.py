@@ -58,39 +58,47 @@ def getComplementScore(targetIndex, graph, args, firstValuation, ignoredArgs):
 	else:
 		return getComplementScore(targetIndex, graph, args, newValuation, ignoredArgs)
 
-def turnScoreInference(move, previousTurnScore, argsPlayed, agentsInference, targetIndex, firstValuation, universeGraph):
+def fromUniverseToObs(gameArgs, target):
+	i = 0
+	for arg in gameArgs:
+		if(arg == target):
+			return i
+		else:
+			i += 1
+
+def turnScoreInference(move, previousTurnScore, argsPlayed, agentsInference, targetIndex, firstValuation, game_att, gameArgs):
 	if(move.__len__() == 1):
 		return move[0], int(0), argsPlayed, previousTurnScore, agentsInference
 	elif(move.__len__() == 2):
-		newScore = getScore(targetIndex, universeGraph, argsPlayed+[move[1]], firstValuation)
+		newScore = getScore(targetIndex, game_att, argsPlayed+[fromUniverseToObs(gameArgs, move[1])], firstValuation)
 		if(newScore < previousTurnScore):
 			if(((previousTurnScore + newScore)/2.0) < agentsInference[move[0]][1]):
 				agentsInference[move[0]][1] = ((previousTurnScore + newScore)/2.0)
 		else:
 			if(((previousTurnScore + newScore)/2.0) > agentsInference[move[0]][0]):
 				agentsInference[move[0]][0] = ((previousTurnScore + newScore)/2.0)
-		return move[0], int(1), argsPlayed+[move[1]], newScore, agentsInference
+		return move[0], int(1), argsPlayed+[fromUniverseToObs(gameArgs, move[1])], newScore, agentsInference
 	elif(move.__len__() == 3):
-		newScore = getScore(targetIndex, universeGraph, argsPlayed+[move[1]]+[move[2]], firstValuation)
+		newScore = getScore(targetIndex, game_att, argsPlayed+[fromUniverseToObs(gameArgs, move[1])]+[fromUniverseToObs(gameArgs, move[2])], firstValuation)
 		if(newScore < previousTurnScore):
 			if(((previousTurnScore + newScore)/2.0) < agentsInference[move[0]][1]):
 				agentsInference[move[0]][1] = ((previousTurnScore + newScore)/2.0)
 		else:
 			if(((previousTurnScore + newScore)/2.0) > agentsInference[move[0]][0]):
 				agentsInference[move[0]][0] = ((previousTurnScore + newScore)/2.0)
-		return move[0], int(1), argsPlayed+[move[1]]+[move[2]], newScore, agentsInference
+		return move[0], int(1), argsPlayed+[fromUniverseToObs(gameArgs, move[1])]+[fromUniverseToObs(gameArgs, move[2])], newScore, agentsInference
 
-def negInference(turnNotPlayed, move, universeGraph, agentsInference):
+def negInference(turnNotPlayed, move, game_att, agentsInference, gameArgs):
 	couldHave = false
 	if(move.__len__() == 2):
 		i = 0
-		for att in universeGraph[move[1]]:
+		for att in game_att[fromUniverseToObs(gameArgs, move[1])]:
 			if(att == 1):
 				for turn in turnNotPlayed:
 					if(turn[0] == move[0]):
 						if(i in turn[1]): # agent could have played
 							couldHave = true
-							newScore = getScore(targetIndex, universeGraph, turn[1]+[move[1]], firstValuation)
+							newScore = getScore(targetIndex, game_att, turn[1]+[fromUniverseToObs(gameArgs, move[1])], firstValuation)
 							print(f'previousScore : {turn[2]}, newScore : {newScore}')
 							if(newScore < turn[2]):
 								if(((turn[2] + newScore)/2.0) > agentsInference[move[0]][0]):
@@ -101,13 +109,13 @@ def negInference(turnNotPlayed, move, universeGraph, agentsInference):
 			i += 1
 	elif(move.__len__() == 3):
 		i = 0
-		for att in universeGraph[move[2]]:
+		for att in game_att[fromUniverseToObs(gameArgs, move[2])]:
 			if(att == 1):
 				for turn in turnNotPlayed:
 					if(turn[0] == move[0]):
 						if(i in turn[1]): # agent could have played
 							couldHave = true
-							newScore = getScore(targetIndex, universeGraph, turn[1]+[move[1]]+[move[2]], firstValuation)
+							newScore = getScore(targetIndex, game_att, turn[1]+[fromUniverseToObs(gameArgs, move[1])]+[fromUniverseToObs(gameArgs, move[2])], firstValuation)
 							if(newScore < turn[2]):
 								if(((turn[2] + newScore)/2.0) > agentsInference[move[0]][0]):
 									agentsInference[move[0]][0] = ((turn[2] + newScore)/2.0)
@@ -117,23 +125,29 @@ def negInference(turnNotPlayed, move, universeGraph, agentsInference):
 			i += 1
 	return agentsInference,couldHave
 
-def gameScoreInference(moves, nbAgent, targetIndex):
+def gameScoreInference(moves, nbAgent, target, game_att, gameArgs):
 	score = 1
 	agentsInference = []
-	args = [targetIndex]
 	turnNotPlayed = []
+	i = 0
+	for arg in gameArgs:
+		if(arg == target):
+			targetIndex = i
+		else:
+			i += 1
+	args = [targetIndex]
 	for a in range(nbAgent):
 		agentsInference += [[0,1]]
 	print(f'moves : {moves}')
 	for move in moves:
 		couldHave = false
-		ag, hasPlayed, args, score, agentsInference = turnScoreInference(move, score, args, agentsInference, targetIndex, firstValuation, universeGraph)
+		ag, hasPlayed, args, score, agentsInference = turnScoreInference(move, score, args, agentsInference, targetIndex, firstValuation, game_att, gameArgs)
 		if(hasPlayed == 0):
 			turnNotPlayed += [[ag,args,score]]
 			print(f'{ag} did not play : {turnNotPlayed}')
 		else:
 			print(f'{ag} did play : {agentsInference}')
-			agentsInference, couldHave = negInference(turnNotPlayed, move, universeGraph, agentsInference)
+			agentsInference, couldHave = negInference(turnNotPlayed, move, game_att, agentsInference, gameArgs)
 			if(couldHave == true):
 				print(f'{ag} could have played : {agentsInference}')
 	return turnNotPlayed, agentsInference
@@ -243,6 +257,7 @@ print(f'score : {score}\n')
 def protocol(game=[], gameArgs=[targetIndex]):
 	# each agent tries every arg not in it yet and plays the best one
 	done = False
+	game_att = []
 	while(not done):
 		done = True
 		for i in range(nbAgents): # for each agent
@@ -295,9 +310,17 @@ def protocol(game=[], gameArgs=[targetIndex]):
 				argsImpact[multipleArgs[0]] = (best_score - game_score)/2 # game_score - ag_score[i] + minDiff
 				gameArgs.append(int(multipleArgs[0]))
 			print(f'gameArgs, score : {gameArgs}, {getScore(targetIndex, universeGraph, gameArgs, firstValuation)}\n')
-	return game, gameArgs
+	for i in range(gameArgs.__len__()):
+		game_att.append([])
+		for j in range(gameArgs.__len__()):
+			if(universeGraph[gameArgs[i]][gameArgs[j]] == 1):
+				game_att[i].append(int(1))
+			else:
+				game_att[i].append(int(0))
+	print(f'----------------------\n\n{game_att}\n\n-----------------------')
+	return game, gameArgs, game_att
 
-game, gameArgs = protocol()
+game, gameArgs, game_att = protocol()
 
 def partialProtocol(game=[], gameArgs=[targetIndex], playable=universeArgs, exception=[]):
 	# each agent tries every arg not in it yet and plays the best one
@@ -377,9 +400,9 @@ for item in universeArgs:
 	else:
 		argsImpactOnPartialProtocol[item] = 0.0
 
-var1, var2 = gameScoreInference(game, nbAgents, targetIndex)
+var1, var2 = gameScoreInference(game, nbAgents, targetIndex, game_att, gameArgs)
 
-print(f'turnNotPlayed : {var1}\nagentsInference : {var2}')
+print(f'turnNotPlayed : {var1}\nagentsInference : {var2}\n')
 
 # impact of args based on universe protocol
 
