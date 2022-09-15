@@ -13,11 +13,3 @@ now=$(date +"%Y-%m-%d_%X")
 		./bench.py ./test4_${now}/bench${i}.csv
 	done
 done
-	# nbArgs=$((75 * $i))
-	# mkdir test_R-CDisc_${now}/tests_${nbArgs}args
-	# for ((j = 0; 50 - $j; j++)); do
-		# java -cp ./AFGen.jar net.sf.jAFBenchGen.jAFBenchGen.Generator -numargs $nbArgs -type ErdosRenyi -ER_probAttacks 0.9 >test_R-CDisc_${now}/tests_${nbArgs}args/graph$j.apx
-		# { time java -cp ./target/solver-1.0-SNAPSHOT.jar com.bf.solver.App -p R-CDisc -f test_R-CDisc_${now}/tests_${nbArgs}args/graph$j.apx -fo apx >test_R-CDisc_${now}/tests_${nbArgs}args/results_graph$j.txt 2>stderr; } 2>>test_R-CDisc_${now}/benchtime.txt
-	# done
-# rm stderr
-# ./bench.py test_R-CDisc_${now}/benchtime.txt CDiscussion_Based_ErdosRenyi_0.9 CDiscussion_Based_ErdosRenyi_9
