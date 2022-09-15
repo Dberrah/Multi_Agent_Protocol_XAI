@@ -254,10 +254,13 @@ for i in range(nbAgents):
 	print(f'agent {i} score : {ag_score[i]}')
 print(f'score : {score}\n')
 
-def protocol(game=[], gameArgs=[targetIndex]):
-	# each agent tries every arg not in it yet and plays the best one
+def protocol():
+	gameArgs = [targetIndex]
+	game = []
 	done = False
 	game_att = []
+	nbArgPlayed = 0
+	# each agent tries every arg not in it yet and plays the best one
 	while(not done):
 		done = True
 		for i in range(nbAgents): # for each agent
