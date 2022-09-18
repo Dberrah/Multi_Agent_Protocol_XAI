@@ -6,7 +6,7 @@ python3 ./Protocol.py /home/user/directory/path/ name_of_the_output
 ```
 
 For the experimentations, the script bench.sh needs to be in the same directory as debategraph_generation.py and Protocol.py.
-Run the following command :
+To run it, use the following command :
 ```bash
 ./bench.sh
 ```
