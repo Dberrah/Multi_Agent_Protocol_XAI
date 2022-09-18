@@ -8,29 +8,33 @@ import re
 import sys
 import os
 
+# formula to extract the inferred score from the inferences
 def scoreFromInference(var2):
 	ag_score_infered = []
 	for ag in var2:
+		# the inferred score is the middle of the inferred interval
 		ag_score_infered.append((max(ag[0],ag[2]) + min(ag[1],ag[3]))/2.0)
 	return ag_score_infered
 
+# return true if an argument attacks the issue
 def attackTarget(agentArgs):
 	for arg in agentArgs:
 		if(arg in attaquants[0]):
 			return True
 	return False
 
+# computes the score with respect to the h-categorizer semantic
 def getScore(graph, firstValuation = []):
 	if(firstValuation == []):
 		firstValuation = []
-		for item in range(len(graph)): # creation de la nouvelle valuation
+		for item in range(len(graph)): # creation of the new valuation
 			firstValuation.append(float(1.0))
 	newValuation = []
 	stable = True
-	for item in range(len(graph)): # creation de la nouvelle valuation
+	for item in range(len(graph)): # creation of the new valuation
 		newValuation.append(float(1.0))
 	i = 0
-	for arg,att in graph.items(): # parcours les elements du graphe
+	for arg,att in graph.items(): # go through the elements of the graph
 		sum = 1.0
 		j = 0
 		for item in graph:
@@ -38,7 +42,7 @@ def getScore(graph, firstValuation = []):
 				sum += float(firstValuation[j])
 			j += 1
 		newValuation[i] = float(1.0/sum)
-		if(abs(firstValuation[i] - newValuation[i]) > 0.0001):
+		if(abs(firstValuation[i] - newValuation[i]) > 0.0001): # the treshhold is fixed to 0.0001
 			stable = False
 		i += 1
 	if(stable):
@@ -46,19 +50,20 @@ def getScore(graph, firstValuation = []):
 	else:
 		return getScore(graph, newValuation)
 
+# computes the positive inference
 def turnScoreInference(move, previousTurnScore, argsPlayed, agentsInference):
-	if(move.__len__() == 2):
+	if(move.__len__() == 2): # if the agent did not play
 		return move[0], int(0), [], argsPlayed, previousTurnScore, agentsInference
-	elif(move.__len__() == 3):
+	elif(move.__len__() == 3): # if the agent played one argument
 		newScore = getScore(move[2])
-		if(newScore < previousTurnScore):
+		if(newScore < previousTurnScore): # if the score got closer to zero
 			if(((previousTurnScore + newScore)/2.0) < agentsInference[move[0]][1]):
 				agentsInference[move[0]][1] = ((previousTurnScore + newScore)/2.0)
-		else:
-			if(((previousTurnScore + newScore)/2.0) > agentsInference[move[0]][0]):
+		else: # if the score got closer to one
+			if(((previousTurnScore + newScore)/2.0) > agentsInference[move[0]][0]): # if it gives new information about the personal score of the agent
 				agentsInference[move[0]][0] = ((previousTurnScore + newScore)/2.0)
 		return move[0], int(1), [move[1]], argsPlayed+[argToId[move[1]]], newScore, agentsInference
-	elif(move.__len__() == 4):
+	elif(move.__len__() == 4): # if the agent played two arguments
 		newScore = getScore(move[3])
 		if(newScore < previousTurnScore):
 			if(((previousTurnScore + newScore)/2.0) < agentsInference[move[0]][1]):
@@ -68,17 +73,18 @@ def turnScoreInference(move, previousTurnScore, argsPlayed, agentsInference):
 				agentsInference[move[0]][0] = ((previousTurnScore + newScore)/2.0)
 		return move[0], int(1), [move[1]]+[move[2]], argsPlayed+[argToId[move[1]]]+[argToId[move[2]]], newScore, agentsInference
 
+# computes the negative inference
 def negInference(turnNotPlayed, move, game_att, agentsInference):
 	# print('NEGINF1')
 	# print(move)
 	couldHave = False
-	if(move.__len__() == 3):
+	if(move.__len__() == 3): # if the agent played one argument
 		# i = 0
 		# print('NEGINF3')
 			# if(att == 1):
-		for turn in turnNotPlayed:
+		for turn in turnNotPlayed: # goes through the turns during which the agent did not play
 			print(f'{turn} == {move[0]} ?')
-			if(turn[0] == move[0]):
+			if(turn[0] == move[0]): # if it was the agent's turn to play
 				for att in turn[1]: #game_att[argToId[move[1]]]:
 				# print(f'NEGINF, turn : {turn}, {att}')
 					print(att)
@@ -87,16 +93,16 @@ def negInference(turnNotPlayed, move, game_att, agentsInference):
 						temp = copy.deepcopy(turn[1])
 						temp[argToId[move[1]]] = move[2][argToId[move[1]]]
 						newScore = getScore(temp)
-						if(newScore < turn[2]):
+						if(newScore < turn[2]): # if the score would have gotten closer to zero
 							print('NEGINFBS')
 							if(((turn[2] + newScore)/2.0) > agentsInference[move[0]][2]):
 								agentsInference[move[0]][2] = ((turn[2] + newScore)/2.0)
-						else:
+						else: # closer to one
 							print('NEGINFBI')
 							if(((turn[2] + newScore)/2.0) < agentsInference[move[0]][3]):
 								agentsInference[move[0]][3] = ((turn[2] + newScore)/2.0)
 			# i += 1
-	elif(move.__len__() == 4):
+	elif(move.__len__() == 4): # if the agent played two arguments
 		# i = 0
 		# print('NEGINF4')
 			# if(att == 1):
@@ -122,6 +128,7 @@ def negInference(turnNotPlayed, move, game_att, agentsInference):
 			# i += 1
 	return agentsInference,couldHave
 
+# this function process the game history to compute the inferences
 def gameScoreInference(moves, nbAgent, game_att):
 	score = 1
 	agentsInference = []
@@ -129,24 +136,18 @@ def gameScoreInference(moves, nbAgent, game_att):
 	inferenceHistory = []
 	i = 0
 	args = [0]
-	for a in range(nbAgent):
-		agentsInference += [[0,1,0,1]]
+	for a in range(nbAgent): # init the inferred intervals
+		agentsInference += [[0,1,0,1]] # positive inference lower and upper bounds and negative inference lower and upper bounds
 		inferenceHistory += [[[0,1,0,1]]]
 	# print(f'moves : {moves}')
-	for move in moves:
+	for move in moves: # goes through the game history
 		couldHave = False
 		print(f'move : {move}')
-		ag, hasPlayed, played, args, score, agentsInference = turnScoreInference(move, score, args, agentsInference)
-		# inferenceHistory[ag].append([agentsInference[ag][0], agentsInference[ag][1], agentsInference[ag][2], agentsInference[ag][3]])
-		# if(move.__len__() == 3):
-		# 	turnNotPlayed += [[ag,move[2],score]]
-		# 	print(f'Agent {ag} did not play, so we save the game : {[ag,move[2],score]}')# : {turnNotPlayed}')
-		# elif(move.__len__() == 4):
-		# 	turnNotPlayed += [[ag,move[3],score]]
-		if(hasPlayed == 0):
-			turnNotPlayed += [[ag,move[1],score]]
+		ag, hasPlayed, played, args, score, agentsInference = turnScoreInference(move, score, args, agentsInference) # calls positive inference
+		if(hasPlayed == 0): # if the agent did not play
+			turnNotPlayed += [[ag,move[1],score]] 
 			print(f'Agent {ag} did not play, so we save the game : {[ag,move[1],score]}')# : {turnNotPlayed}')
-		else:
+		else: # if the agent played
 			print(f'Agent {ag} did play ',end='')#{played} : {agentsInference}')
 			print("{",end='')
 			j = 0
@@ -158,10 +159,10 @@ def gameScoreInference(moves, nbAgent, game_att):
 				j += 1
 			print("} :")
 			print(f'\tAgent\'s inference : {agentsInference[ag]}')
-			agentsInference, couldHave = negInference(turnNotPlayed, move, game_att, agentsInference)
+			agentsInference, couldHave = negInference(turnNotPlayed, move, game_att, agentsInference) # calls negative inference
 			# inferenceHistory[ag].append([agentsInference[ag][0], agentsInference[ag][1], agentsInference[ag][2], agentsInference[ag][3]])
 			print(f'\tAgent\'s inference : {agentsInference[ag]}, {couldHave}')
-			if(couldHave == True):
+			if(couldHave == True): # if the agent could have make this move before now 
 				print(f'Agent {ag} could have played ',end='')#{played} : {agentsInference}')
 				print("{",end='')
 				j = 0
@@ -177,6 +178,7 @@ def gameScoreInference(moves, nbAgent, game_att):
 	print()
 	return turnNotPlayed, agentsInference, inferenceHistory
 
+# never called (attempt to improve the inference)
 def gameScoreInference2(moves, nbAgent, game_att):
 	agentsInference = []
 	inferenceHistory = []
@@ -212,6 +214,7 @@ def gameScoreInference2(moves, nbAgent, game_att):
 
 	return agentsInference, inferenceHistory
 
+# this function runs the protocol
 def protocol(agentsOrder, ag_score, agentAF, exception = []):
 	# nbArgPlayed = 0
 	gameArgs = [int(0)]
@@ -265,19 +268,21 @@ def protocol(agentsOrder, ag_score, agentAF, exception = []):
 			if(min_index == -1):
 				print(f'Agent {i} doesn\'t play this round')
 				game += [[int(i), copy.deepcopy(game_att)]]
-			elif(multipleArgs == False):
+			elif(multipleArgs == False): # if the agent plays one argument
 				# print([key for key in agentAF[i].keys()][min_index])
 				print(f'Agent {i} plays argument {idToArg[[key for key in agentAF[i].keys()][min_index]]}')
+				# add the argument to the debate graph
 				game_att[[key for key in agentAF[i].keys()][min_index]] = []
 				for k in game_att:
 					for l in game_att:
 						if((l in attaquants[k]) and (l not in game_att[k])):
 							game_att[k].append(l)
+				# add the play to the game history
 				game += [[int(i), idToArg[[key for key in agentAF[i].keys()][min_index]], copy.deepcopy(game_att)]]
 				# argsPlayedByAgent[int(i)].append(int(agentsArgs[i][min_index]))
 				argsImpact[[key for key in agentAF[i].keys()][min_index]] = best_score - game_score # game_score - ag_score[i] + minDiff
 				gameArgs.append(int([key for key in agentAF[i].keys()][min_index]))
-			else:
+			else: # if the agent played two arguments
 				print(f'Agent {i} plays argument {idToArg[[key for key in agentAF[i].keys()][min_index]]} and {idToArg[multipleArgs[0]]}')
 				game_att[[key for key in agentAF[i].keys()][min_index]] = []
 				game_att[multipleArgs[0]] = []
@@ -310,7 +315,7 @@ size_AF = 0
 ag_score = []
 
 path = ''
-
+# finds the generated apx file
 for file in os.listdir(sys.argv[1]):
 	if(re.match("debate_graph_\S+", file)):
 		path = sys.argv[1]+file
@@ -322,19 +327,20 @@ with open(path) as file_object:
 	line = file_object.readline()
 	while line:
 		values = re.split("\\(|\\)|,",line)
-		if(line.startswith('arg')):
+		if(line.startswith('arg')): # new argument
 			argToId[values[1]] = size_AF
 			idToArg[size_AF] = values[1]
-			attaquants[size_AF] = []
-			att[size_AF] = []
+			attaquants[size_AF] = [] # attackers dictionnary
+			att[size_AF] = [] # attacked dictionnary
 			size_AF += 1
-		elif((line.startswith('att')) and (values[1] in argToId) and (values[2] in argToId)):
+		elif((line.startswith('att')) and (values[1] in argToId) and (values[2] in argToId)): # new attack
 			attaquants[argToId[values[2]]].append(argToId[values[1]])
 			att[argToId[values[1]]].append(argToId[values[2]])
 		else:
 			raise Exception("Error in File")
 		line = file_object.readline()
 
+# creation of the universe graph
 for item in range(size_AF):
 	universeGraph.append([])
 	for j in range(size_AF):
@@ -343,15 +349,16 @@ for item in range(size_AF):
 		else:
 			universeGraph[item].append(int(0))
 
+# creation of the agent's knowledge base
 for ag in range(nb_agents):
 	agentAF.append({})
 	for i in range(size_AF):
-		if(i == 0):
+		if(i == 0): # the issue is always part of the knowledge base
 			agentAF[ag][i] = []
-		elif(random.random() <= argDensity):
+		elif(random.random() <= argDensity): # each argument has a probability to be part of the knowledge base
 			agentAF[ag][i] = []
 			#here to get nb args
-	if(not attackTarget(agentAF[ag])):
+	if(not attackTarget(agentAF[ag])): # verify that at least one argument attacks the issue
 		agentAF[ag] = {}
 		while(not attackTarget(agentAF[ag])):
 			for i in range(size_AF):
@@ -364,6 +371,7 @@ for ag in range(nb_agents):
 			if(j in attaquants[i]):
 				agentAF[ag][i].append(j)
 
+# allows to write the useful information in a file
 f = open(sys.argv[1]+'data'+sys.argv[2]+'.csv', 'w', newline='')
 f1 = open(sys.argv[1]+'bench'+sys.argv[2]+'.csv', 'w', newline='')
 writer = csv.writer(f)
@@ -387,8 +395,9 @@ for i in range(nb_agents):
 	agOrder.append(int(i))
 	ag_score.append(getScore(agentAF[i]))
 
-agOrder = itertools.permutations(agOrder, nb_agents)
+agOrder = itertools.permutations(agOrder, nb_agents) # get every possible order 
 
+# use to write the logs
 print(f'There are {nb_agents} agents playing.')
 print()
 print(f'With an argument density of {argDensity}')
@@ -418,7 +427,7 @@ for ag in agentAF:
 	print(f'\n\twith a personal score of {getScore(ag)}\n')
 	k += 1
 
-for agentsOrder in agOrder:
+for agentsOrder in agOrder: # we run the protocol for every order possible
 	print()
 	print("-------------------------------------------------------------------")
 	print(f'\t\t\tAGENTS ORDER : ',end='')
@@ -468,14 +477,14 @@ for agentsOrder in agOrder:
 
 	argsImpactOnFinalOutcome = {}
 
-	for item in gameArgs:
+	for item in gameArgs: # for every argument in the final debate graph
 		if(item != 0):
 			temp1 = copy.deepcopy(game_att)
 			for arg in attaquants[item]:
 				if arg in temp1:
-					temp1.pop(arg)
+					temp1.pop(arg) # remove the direct attackers of item
 			temp2 = copy.deepcopy(game_att)
-			temp2.pop(item)
+			temp2.pop(item) # remove item
 			a = getScore(temp1)
 			b = getScore(temp2)
 			argsImpactOnFinalOutcome[item] = a - b
@@ -486,7 +495,7 @@ for agentsOrder in agOrder:
 	for key, value in argsImpactOnFinalOutcome.items():
 		print(f'\tthe impact of the argument {idToArg[key]} equals {value}')
 
-	print("\n-------------impact of args based on universe protocol-------------\n")
+	print("\n-------------impact of args based on omniscient protocol-------------\n")
 
 	argsImpactOnUniverseProtocol = {}
 
@@ -505,7 +514,7 @@ for agentsOrder in agOrder:
 		print(f'\tthe impact of the argument {idToArg[key]} equals {value}')
 	print()
 
-	print("--------------impact of args based on partial protocol-------------\n")
+	print("--------------impact of args based on observable protocol-------------\n")
 
 	var1, var2, inferenceHistory = gameScoreInference(game, nb_agents, game_att)
 
@@ -645,51 +654,3 @@ for agentsOrder in agOrder:
 	w.writerow(argsImpactOnFinalOutcome.keys())
 	for item in argsPlayed:
 		w.writerow(item)
-
-
-# print(getScore(attaquants, []))
-# print(attaquants)
-# print(idToArg)
-# print(argToId)
-# print(agentAF)
-
-# for item in att:
-# 	print(item)
-# print(att)
-
-# for ag in agentAF:
-# 	print(getScore(ag, firstValuation))
-# 	j = 0
-# 	for cle, value in ag.items():
-# 		if(j == 0):
-# 			print("{",end='')
-# 		else:
-# 			print(", ",end='')
-# 		print(f'{idToArg[cle]}: [', end='')
-# 		i = 0
-# 		for val in value:
-# 			if(i==0):
-# 				print(f'{idToArg[val]}', end='')
-# 			else:
-# 				print(f', {idToArg[val]}', end='')
-# 			i += 1
-# 		print(f']',end='')
-# 		j += 1
-# 	print("}")
-# 	print(ag)
-
-# for arg in universeGraph:
-# 	print(arg)
-
-# print(nb_agents)
-# for ag in agentArgs:
-# 	print(ag)
-
-# print(f'argToId : {argToId}\n')
-# print(f'idToArg : {idToArg}\n')
-# print(f'attaquants : {attaquants}\n')
-# print(f'att : {att}')
-
-# for cle, valeur in argToId.items():
-	# if(valeur == 4):
-		# print(cle)
